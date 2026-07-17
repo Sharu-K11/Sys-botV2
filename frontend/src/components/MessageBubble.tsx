@@ -1,7 +1,7 @@
-import type { ChatMessage } from '../types'
+import type { Message } from '../types'
 
 interface MessageBubbleProps {
-  message: ChatMessage
+  message: Message
 }
 
 function MessageBubble({ message }: MessageBubbleProps) {
@@ -13,12 +13,14 @@ function MessageBubble({ message }: MessageBubbleProps) {
       aria-label={`${message.role} message`}
     >
       <p className="message-bubble__content">{message.content}</p>
-      <time className="message-bubble__time" dateTime={message.timestamp}>
-        {new Date(message.timestamp).toLocaleTimeString([], {
-          hour: '2-digit',
-          minute: '2-digit',
-        })}
-      </time>
+      {message.created_at ? (
+        <time className="message-bubble__time" dateTime={message.created_at}>
+          {new Date(message.created_at).toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+          })}
+        </time>
+      ) : null}
     </article>
   )
 }

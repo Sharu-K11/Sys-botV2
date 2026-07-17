@@ -77,8 +77,9 @@ class MessageModel(Model_Base):
     )
     user: Mapped["UserModel"] = relationship(back_populates="messages")
     content: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at:Mapped[datetime] = mapped_column(DateTime,default=lambda :datetime.now(timezone.utc))
 
-
+#Need to add weather the chat belong to the current user
 class FeedbackModel(Model_Base):
     __tablename__ = "feedbacks"
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)

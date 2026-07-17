@@ -1,11 +1,12 @@
-import type { Agent, ChatModel, UserRegistration } from '../types'
+import type {
+  AuthResponse,
+  Chat,
+  LoginRequest,
+  Message,
+  RegisterRequest,
+} from '../types'
 
 const API_BASE_URL = 'http://localhost:8000/api'
-
-interface LoginPayload {
-  identifier: string
-  password: string
-}
 
 interface ApiErrorPayload {
   detail?: string
@@ -21,34 +22,81 @@ async function parseApiError(response: Response): Promise<string> {
   }
 }
 
-export async function registerUser(payload: UserRegistration): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/users/register`, {
-    method: 'POST',
+function getAuthHeaders(): HeadersInit {
+  const token = localStorage.getItem('access_token')
+
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  }
+}
+
+async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...options,
     headers: {
-      'Content-Type': 'application/json',
+      ...getAuthHeaders(),
+      ...options.headers,
     },
-    body: JSON.stringify(payload),
   })
 
   if (!response.ok) {
     throw new Error(await parseApiError(response))
   }
+
+  if (response.status === 204) {
+    return undefined as T
+  }
+
+  return response.json() as Promise<T>
 }
 
-export async function loginUser(_payload: LoginPayload): Promise<void> {
-  await new Promise((resolve) => {
-    setTimeout(resolve, 600)
+export function registerUser(payload: RegisterRequest): Promise<void> {
+  return request('/users/register', {
+    method: 'POST',
+    body: JSON.stringify(payload),
   })
 }
 
-export async function sendChatMessage(
-  agent: Agent,
-  message: string,
-  model: ChatModel,
-): Promise<string> {
-  await new Promise((resolve) => {
-    setTimeout(resolve, 700)
+export async function loginUser(payload: LoginRequest): Promise<AuthResponse> {
+  const auth = await request<AuthResponse>('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify(payload),
   })
 
-  return `I am ${agent.name} running on ${model}. I received your message: "${message}". This is a placeholder response until the FastAPI chat endpoint is connected.`
+  localStorage.setItem('access_token', auth.access_token)
+  return auth
+}
+
+export function getChats(): Promise<Chat[]> {
+  return request('/chats/')
+}
+
+export function createChat(firstMessage: string): Promise<Chat> {
+  return request('/chats/create-chat', {
+    method: 'POST',
+    body: JSON.stringify({ first_message: firstMessage }),
+  })
+}
+
+export function updateChat(chatId: number, title: string): Promise<Chat> {
+  return request(`/chats/${chatId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ title }),
+  })
+}
+
+export function deleteChat(chatId: number): Promise<void> {
+  return request(`/chats/${chatId}`, { method: 'DELETE' })
+}
+
+export function getMessages(chatId: number): Promise<Message[]> {
+  return request(`/chats/${chatId}/messages`)
+}
+
+export function createMessage(chatId: number, content: string): Promise<void> {
+  return request(`/chats/${chatId}/messages`, {
+    method: 'POST',
+    body: JSON.stringify({ content }),
+  })
 }

@@ -1,192 +1,85 @@
 import { useState } from 'react'
-import { useLocation } from 'react-router-dom'
 import MessageBubble from '../components/MessageBubble'
-import { studyAgents } from '../data/agents'
-import Navbar from '../components/Navbar'
-import { sendChatMessage } from '../services/api'
-import type { Agent, ChatMessage, ChatModel } from '../types'
+import MessageInput from '../components/MessageInput'
+import Sidebar from '../components/Sidebar'
+import type { Chat, Message } from '../types'
 
-interface ChatLocationState {
-  agent?: Agent
-}
-
-const chatModels: ChatModel[] = [
-  'GPT-4.1',
-  'GPT-4o',
-  'Claude 3.7 Sonnet',
-  'Gemini 2.5 Pro',
+const previewChats: Chat[] = [
+  { id: 1, title: 'Virtual memory overview' },
+  { id: 2, title: 'Operating system scheduling' },
+  { id: 3, title: 'Database normalization' },
 ]
 
-function createMessage(role: 'user' | 'assistant', content: string): ChatMessage {
-  return {
-    id: globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`,
-    role,
-    content,
-    timestamp: new Date().toISOString(),
-  }
-}
+const previewMessages: Message[] = [
+  {
+    id: 1,
+    user_id: 1,
+    content: 'Can you explain virtual memory in simple terms?',
+    role: 'user',
+  },
+  {
+    id: 2,
+    user_id: 0,
+    content:
+      'Virtual memory lets your computer use part of its storage as if it were extra RAM. It gives each program its own address space and moves less-used pages between memory and disk as needed.',
+    role: 'assistant',
+  },
+]
 
 function ChatPage() {
-  const location = useLocation()
-  const state = (location.state as ChatLocationState | undefined) || {}
-  const [currentAgent, setCurrentAgent] = useState<Agent | undefined>(
-    state.agent || studyAgents[0],
-  )
-
-  const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [selectedChatId, setSelectedChatId] = useState(1)
   const [draft, setDraft] = useState('')
-  const [selectedModel, setSelectedModel] = useState<ChatModel>('GPT-4.1')
-  const [isAgentMenuOpen, setIsAgentMenuOpen] = useState(false)
-  const [isSending, setIsSending] = useState(false)
-  const [error, setError] = useState('')
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
-  function handleAgentChange(agent: Agent) {
-    setCurrentAgent(agent)
-    setIsAgentMenuOpen(false)
-  }
-
-  async function handleSendMessage(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-
-    const trimmedDraft = draft.trim()
-    if (!trimmedDraft || !currentAgent) {
-      return
-    }
-
-    const userMessage = createMessage('user', trimmedDraft)
-    setMessages((prev) => [...prev, userMessage])
-    setDraft('')
-    setIsSending(true)
-    setError('')
-
-    try {
-      const assistantReply = await sendChatMessage(
-        currentAgent,
-        trimmedDraft,
-        selectedModel,
-      )
-      const assistantMessage = createMessage('assistant', assistantReply)
-      setMessages((prev) => [...prev, assistantMessage])
-    } catch (apiError) {
-      setError(apiError instanceof Error ? apiError.message : 'Could not send message')
-    } finally {
-      setIsSending(false)
-    }
-  }
-
-  if (!currentAgent) {
-    return (
-      <main className="auth-page">
-        <section className="auth-card">
-          <h2 className="auth-card__title">No agent selected</h2>
-          <p className="auth-card__subtitle">
-            Please create at least one agent before starting a chat.
-          </p>
-        </section>
-      </main>
-    )
+  function selectChat(chat: Chat) {
+    setSelectedChatId(chat.id)
+    setIsSidebarOpen(false)
   }
 
   return (
-    <div className="page-shell">
-      <Navbar studentName="Alex Student" />
-      <main className="chat-page">
-        <div className="chat-page__header">
-          <p className="chat-page__agent-title">Active Agent: {currentAgent.name}</p>
-
-          <div className="chat-agent-switcher">
-            <button
-              type="button"
-              className="chat-agent-switcher__button"
-              aria-haspopup="menu"
-              aria-expanded={isAgentMenuOpen}
-              aria-controls="chat-agent-menu"
-              aria-label="Switch chat agent"
-              onClick={() => setIsAgentMenuOpen((prev) => !prev)}
-            >
-              <span className="chat-agent-switcher__dot" />
-              <span className="chat-agent-switcher__dot" />
-              <span className="chat-agent-switcher__dot" />
-            </button>
-
-            {isAgentMenuOpen ? (
-              <div id="chat-agent-menu" className="chat-agent-switcher__menu" role="menu">
-                <p className="chat-agent-switcher__label">Pick Agent</p>
-                {studyAgents.map((agent) => (
-                  <button
-                    key={agent.id}
-                    type="button"
-                    role="menuitem"
-                    className={`chat-agent-switcher__option ${
-                      currentAgent.id === agent.id
-                        ? 'chat-agent-switcher__option--active'
-                        : ''
-                    }`}
-                    onClick={() => handleAgentChange(agent)}
-                  >
-                    {agent.name}
-                  </button>
-                ))}
-              </div>
-            ) : null}
+    <div className="chat-layout">
+      <Sidebar
+        chats={previewChats}
+        selectedChatId={selectedChatId}
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+        onNewChat={() => setDraft('')}
+        onSelectChat={selectChat}
+        onRenameChat={() => undefined}
+        onDeleteChat={() => undefined}
+      />
+      <main className="chat-main">
+        <header className="chat-main__header">
+          <button
+            type="button"
+            className="icon-button chat-main__menu"
+            aria-label="Open chat history"
+            onClick={() => setIsSidebarOpen(true)}
+          >
+            <span aria-hidden="true">&#9776;</span>
+          </button>
+          <div>
+            <h1>SysBot</h1>
+            <span>AI Course Assistant</span>
           </div>
-        </div>
+        </header>
 
-        <section className="chat-messages" aria-live="polite">
-          {messages.length === 0 ? (
-            <p className="feedback">
-              Start by asking a question about your course textbook.
-            </p>
-          ) : (
-            messages.map((message) => (
+        <section className="chat-thread" aria-label="Conversation" aria-live="polite">
+          <div className="chat-thread__content">
+            {previewMessages.map((message) => (
               <MessageBubble key={message.id} message={message} />
-            ))
-          )}
-
-          {isSending ? (
-            <p className="feedback">Assistant is thinking...</p>
-          ) : null}
-          {error ? <p className="feedback feedback--error">{error}</p> : null}
+            ))}
+          </div>
         </section>
 
-        <form className="chat-form" onSubmit={handleSendMessage}>
-          <div className="chat-form__row">
-            <label htmlFor="chat-model" className="chat-form__label">
-              Model
-            </label>
-            <select
-              id="chat-model"
-              className="chat-form__select"
-              value={selectedModel}
-              onChange={(event) => setSelectedModel(event.target.value as ChatModel)}
-            >
-              {chatModels.map((model) => (
-                <option key={model} value={model}>
-                  {model}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <label htmlFor="chat-input" className="chat-form__label">
-            Message
-          </label>
-          <textarea
-            id="chat-input"
-            className="chat-form__textarea"
+        <div className="chat-composer">
+          <MessageInput
             value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            rows={4}
-            placeholder="Ask about a chapter, theorem, or concept..."
+            onChange={setDraft}
+            onSubmit={() => setDraft('')}
           />
-          <button
-            type="submit"
-            className="primary-button"
-            disabled={isSending || draft.trim().length === 0}
-          >
-            {isSending ? 'Sending...' : 'Send'}
-          </button>
-        </form>
+          <p>SysBot can make mistakes. Check important course information.</p>
+        </div>
       </main>
     </div>
   )

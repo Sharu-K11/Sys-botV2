@@ -2,19 +2,15 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import FormInput from '../components/FormInput'
 import { loginUser } from '../services/api'
+import type { LoginRequest } from '../types'
 
-interface LoginForm {
-  identifier: string
-  password: string
-}
-
-const initialForm: LoginForm = {
-  identifier: '',
+const initialForm: LoginRequest = {
+  username: '',
   password: '',
 }
 
 function LoginPage() {
-  const [formData, setFormData] = useState<LoginForm>(initialForm)
+  const [formData, setFormData] = useState<LoginRequest>(initialForm)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const navigate = useNavigate()
@@ -53,10 +49,10 @@ function LoginPage() {
 
         <form onSubmit={handleSubmit} className="auth-form">
           <FormInput
-            id="identifier"
-            name="identifier"
-            label="Username or email"
-            value={formData.identifier}
+            id="username"
+            name="username"
+            label="Username"
+            value={formData.username}
             onChange={handleInputChange}
             required
             autoComplete="username"
