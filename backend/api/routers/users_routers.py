@@ -4,6 +4,7 @@ from sqlalchemy import select
 from api.schemas.users_schemas import UserRegistrationRequest
 from api.models.users_model import UserModel
 from api.database.db_config import SessioDep
+from api.services.auth_services import get_password_hash
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -32,8 +33,7 @@ def register_user(request: UserRegistrationRequest, db: SessioDep):
 
     #Creating a new user
     new_user = UserModel(**request.model_dump(exclude={"password"}))
-    new_user.password_hash= "Hashed password"
-
+    new_user.password_hash= get_password_hash(request.password)
 
     db.add(new_user)
     db.commit()
