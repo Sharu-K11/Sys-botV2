@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from api.models.users_model import UserModel, ChatSessionModel, MessageModel
 from api.schemas.chats_schemas import (
     CreateChatRequest,
@@ -7,11 +9,14 @@ from api.schemas.chats_schemas import (
     MessageRequest,
     MessageResponse,
 )
+from api.schemas.auth_schemas import User
+from api.services.auth_services import get_current_user
+
 
 from random import randint
 from api.database.db_config import SessioDep
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 
 
 router = APIRouter(prefix="/chats", tags=["Chats"])
@@ -23,13 +28,9 @@ def chat_health():
 
 
 @router.get("/", response_model=list[ListChatsResponse])
-def list_chats(db: SessioDep):
+def list_chats(db: SessioDep , current_user:Annotated[UserModel,Depends(get_current_user)]):
     # Need to setup the current user
-    user_model = db.get(UserModel, 1)
-    if user_model is None:
-        raise HTTPException(status_code=404, detail="No Valid User")
-
-    return user_model.chats
+    return current_user.chats
 
 
 # Build this and move to services folder
