@@ -4,7 +4,7 @@ from api.routers._routers import router
 from fastapi.middleware.cors import CORSMiddleware
 
 
-from api.database.db_config import engine ,Model_Base
+from api.database.db_config import async_engine ,Model_Base
 
 app = FastAPI()
 

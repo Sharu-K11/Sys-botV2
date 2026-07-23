@@ -10,12 +10,10 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 
 @router.post("/register")
-def register_user(request: UserRegistrationRequest, db: SessioDep):
+async def register_user(request: UserRegistrationRequest, db: SessioDep):
 
     # check if username exists
-    existing_user = db.execute(
-        select(UserModel).where(UserModel.username == request.username)
-    ).scalar_one_or_none()
+    existing_user =( await db.execute( select(UserModel).where(UserModel.username == request.username))).scalar_one_or_none() 
 
     if (existing_user):
         raise HTTPException(
@@ -24,7 +22,7 @@ def register_user(request: UserRegistrationRequest, db: SessioDep):
         )
     
     #check if email exist
-    existing_email =  db.execute(select(UserModel).where(UserModel.email == request.email)).scalar_one_or_none()
+    existing_email = (await db.execute(select(UserModel).where(UserModel.email == request.email))).scalar_one_or_none()
     if (existing_email):
         raise HTTPException (
             status_code=400,
@@ -36,8 +34,8 @@ def register_user(request: UserRegistrationRequest, db: SessioDep):
     new_user.password_hash= get_password_hash(request.password)
 
     db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
+    await db.commit()
+    await db.refresh(new_user)
 
     return {
         "message": "User registered successfully",

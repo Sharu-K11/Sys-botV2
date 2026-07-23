@@ -1,24 +1,28 @@
 from typing import Annotated
 
 from fastapi import Depends
-from sqlalchemy import create_engine
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy.orm import Session, sessionmaker,DeclarativeBase
 
 # I copied this from the SQLAlchemy documentation.
 #  It is a common pattern for setting up a database connection and session management in a Python application using SQLAlchemy.
-SQLALCHEMY_DATABASE_URL = "sqlite:///./sysbot.db"
+SQLALCHEMY_DATABASE_URL =  "sqlite+aiosqlite:///./sysbot.db"
 
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+async_engine  = create_async_engine(
+    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False},echo= True # Optional : Logs all generated SQL queries
 )
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+AsyncSessionLocal = async_sessionmaker(
+    bind=async_engine, 
+    class_=AsyncSession, 
+    expire_on_commit=False
+)
 
 class Model_Base(DeclarativeBase):
     pass
 
-def get_db():
-    with SessionLocal() as db:
-        yield db
+async def get_db():
+    async with AsyncSessionLocal() as session:
+        yield session
 
 
-SessioDep = Annotated[Session, Depends(get_db)]
+SessioDep = Annotated[AsyncSession, Depends(get_db)]
