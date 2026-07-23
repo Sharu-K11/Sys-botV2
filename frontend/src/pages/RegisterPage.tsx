@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import AuthLayout from '../components/AuthLayout'
 import FormInput from '../components/FormInput'
 import { registerUser } from '../services/api'
 import type { Standing, UserRegistration } from '../types'
@@ -26,7 +27,7 @@ function RegisterPage() {
   const [formData, setFormData] = useState<UserRegistration>(initialForm)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
-  const [successMessage, setSuccessMessage] = useState('')
+  const navigate = useNavigate()
 
   function handleInputChange(event: React.ChangeEvent<HTMLInputElement>) {
     const { name, value } = event.target
@@ -48,12 +49,13 @@ function RegisterPage() {
     event.preventDefault()
     setIsLoading(true)
     setError('')
-    setSuccessMessage('')
 
     try {
       await registerUser(formData)
-      setSuccessMessage('Registration complete. You can now sign in.')
-      setFormData(initialForm)
+      navigate('/login', {
+        replace: true,
+        state: { registrationMessage: 'Account created. Sign in to get started.' },
+      })
     } catch (apiError) {
       setError(apiError instanceof Error ? apiError.message : 'Registration failed')
     } finally {
@@ -62,13 +64,12 @@ function RegisterPage() {
   }
 
   return (
-    <main className="auth-page">
-      <section className="auth-card">
-        <h2 className="auth-card__title">Create your account</h2>
-        <p className="auth-card__subtitle">
-          Sign up to use course-specific AI study assistants.
-        </p>
-
+    <AuthLayout
+      eyebrow="New to SysBot"
+      title="Create your account"
+      description="Set up your profile, then choose an assistant built for how you study."
+    >
+      <section className="auth-card auth-card--register">
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="auth-grid">
             <FormInput
@@ -146,9 +147,6 @@ function RegisterPage() {
           </div>
 
           {error ? <p className="feedback feedback--error">{error}</p> : null}
-          {successMessage ? (
-            <p className="feedback feedback--success">{successMessage}</p>
-          ) : null}
 
           <button type="submit" className="primary-button" disabled={isLoading}>
             {isLoading ? 'Registering...' : 'Register'}
@@ -159,7 +157,7 @@ function RegisterPage() {
           Already have an account? <Link to="/login">Log in</Link>
         </p>
       </section>
-    </main>
+    </AuthLayout>
   )
 }
 

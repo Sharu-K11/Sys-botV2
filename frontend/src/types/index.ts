@@ -40,6 +40,9 @@ export interface Message {
 export interface Agent {
   id: string
   name: string
+  nickname: string
+  personality: string
+  traits: string[]
   technique: string
   description: string
   recommendedUse: string
@@ -52,8 +55,3 @@ export interface ChatMessage {
   timestamp: string
 }
 
-export type ChatModel =
-  | 'GPT-4.1'
-  | 'GPT-4o'
-  | 'Claude 3.7 Sonnet'
-  | 'Gemini 2.5 Pro'

@@ -50,7 +50,7 @@ def create_access_token(data:dict , expires_delta:timedelta|None = None):
 
 
 # Used for fist time login and obtaining the bearer
-def get_current_user(token:Annotated[str, Depends(oauth2_scheme)] , db:SessioDep):
+async def get_current_user(token:Annotated[str, Depends(oauth2_scheme)] , db:SessioDep):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail=" Counld Not validate credential",
@@ -66,7 +66,7 @@ def get_current_user(token:Annotated[str, Depends(oauth2_scheme)] , db:SessioDep
         raise credentials_exception
     
     statement = select(UserModel).where(UserModel.username == token_data.username)
-    user = db.execute(statement).scalar_one_or_none()
+    user = (await db.execute(statement)).scalar_one_or_none()
     if user is None:
         raise credentials_exception
     

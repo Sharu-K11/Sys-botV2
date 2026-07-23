@@ -1,5 +1,6 @@
 import ChatListItem from './ChatListItem'
 import type { Chat } from '../types'
+import { Link } from 'react-router-dom'
 
 interface SidebarProps {
   chats: Chat[]
@@ -25,6 +26,17 @@ function Sidebar({
   return (
     <>
       <aside className={`chat-sidebar ${isOpen ? 'chat-sidebar--open' : ''}`}>
+        <div className="chat-sidebar__brand">
+          <span>S</span>
+          <div>
+            <strong>SysBot</strong>
+            <small>Learning workspace</small>
+          </div>
+        </div>
+        <Link to="/dashboard" className="chat-sidebar__home">
+          <span aria-hidden="true">&#8592;</span>
+          Back to dashboard
+        </Link>
         <div className="chat-sidebar__header">
           <button type="button" className="new-chat-button" onClick={onNewChat}>
             <span aria-hidden="true">+</span>
@@ -43,6 +55,9 @@ function Sidebar({
         <p className="chat-sidebar__label">Recent</p>
         <nav aria-label="Chat history">
           <ul className="chat-list">
+            {chats.length === 0 ? (
+              <li className="chat-list__empty">No chats yet</li>
+            ) : null}
             {chats.map((chat) => (
               <ChatListItem
                 key={chat.id}

@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import AuthLayout from '../components/AuthLayout'
 import FormInput from '../components/FormInput'
 import { loginUser } from '../services/api'
 import type { LoginRequest } from '../types'
@@ -14,6 +15,9 @@ function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const navigate = useNavigate()
+  const location = useLocation()
+  const registrationMessage = (location.state as { registrationMessage?: string } | null)
+    ?.registrationMessage
 
   function handleInputChange(event: React.ChangeEvent<HTMLInputElement>) {
     const { name, value } = event.target
@@ -31,7 +35,7 @@ function LoginPage() {
 
     try {
       await loginUser(formData)
-      navigate('/dashboard')
+      navigate('/chat', { replace: true, state: { newChat: true } })
     } catch (apiError) {
       setError(apiError instanceof Error ? apiError.message : 'Login failed')
     } finally {
@@ -40,13 +44,12 @@ function LoginPage() {
   }
 
   return (
-    <main className="auth-page">
+    <AuthLayout
+      eyebrow="Welcome back"
+      title="Continue your studies"
+      description="Sign in to return to your agents and course conversations."
+    >
       <section className="auth-card">
-        <h2 className="auth-card__title">Welcome back</h2>
-        <p className="auth-card__subtitle">
-          Log in and continue studying with your AI assistant.
-        </p>
-
         <form onSubmit={handleSubmit} className="auth-form">
           <FormInput
             id="username"
@@ -68,6 +71,9 @@ function LoginPage() {
             autoComplete="current-password"
           />
 
+          {registrationMessage ? (
+            <p className="feedback feedback--success">{registrationMessage}</p>
+          ) : null}
           {error ? <p className="feedback feedback--error">{error}</p> : null}
 
           <button type="submit" className="primary-button" disabled={isLoading}>
@@ -79,7 +85,7 @@ function LoginPage() {
           Need an account? <Link to="/register">Create one</Link>
         </p>
       </section>
-    </main>
+    </AuthLayout>
   )
 }
 

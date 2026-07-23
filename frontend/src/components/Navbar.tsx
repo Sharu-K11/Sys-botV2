@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
+import { logoutUser } from '../services/api'
+import ThemeToggle from './ThemeToggle'
 
 interface NavbarProps {
   studentName?: string
@@ -20,6 +22,7 @@ function Navbar({ studentName = 'Student', onLogout }: NavbarProps) {
       return
     }
 
+    logoutUser()
     navigate('/login')
   }
 
@@ -84,6 +87,7 @@ function Navbar({ studentName = 'Student', onLogout }: NavbarProps) {
           </nav>
 
           <div className="navbar__actions">
+            <ThemeToggle />
             <div className="navbar__profile" aria-label={`Logged in as ${studentName}`}>
               <span className="navbar__avatar" aria-hidden="true">
                 {initials || 'S'}

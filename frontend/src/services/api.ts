@@ -7,6 +7,7 @@ import type {
 } from '../types'
 
 const API_BASE_URL = 'http://localhost:8000/api'
+const ACCESS_TOKEN_KEY = 'access_token'
 
 interface ApiErrorPayload {
   detail?: string
@@ -23,7 +24,7 @@ async function parseApiError(response: Response): Promise<string> {
 }
 
 function getAuthHeaders(): HeadersInit {
-  const token = localStorage.getItem('access_token')
+  const token = getAccessToken()
 
   return {
     'Content-Type': 'application/json',
@@ -41,6 +42,10 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   })
 
   if (!response.ok) {
+    if (response.status === 401 && getAccessToken()) {
+      logoutUser()
+      window.location.assign('/login')
+    }
     throw new Error(await parseApiError(response))
   }
 
@@ -59,13 +64,31 @@ export function registerUser(payload: RegisterRequest): Promise<void> {
 }
 
 export async function loginUser(payload: LoginRequest): Promise<AuthResponse> {
-  const auth = await request<AuthResponse>('/auth/login', {
+  const formData = new URLSearchParams()
+  formData.set('username', payload.username.trim())
+  formData.set('password', payload.password)
+
+  const response = await fetch(`${API_BASE_URL}/auth/token/login`, {
     method: 'POST',
-    body: JSON.stringify(payload),
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: formData,
   })
 
-  localStorage.setItem('access_token', auth.access_token)
+  if (!response.ok) {
+    throw new Error(await parseApiError(response))
+  }
+
+  const auth = (await response.json()) as AuthResponse
+  localStorage.setItem(ACCESS_TOKEN_KEY, auth.access_token)
   return auth
+}
+
+export function getAccessToken(): string | null {
+  return localStorage.getItem(ACCESS_TOKEN_KEY)
+}
+
+export function logoutUser(): void {
+  localStorage.removeItem(ACCESS_TOKEN_KEY)
 }
 
 export function getChats(): Promise<Chat[]> {
@@ -94,7 +117,7 @@ export function getMessages(chatId: number): Promise<Message[]> {
   return request(`/chats/${chatId}/messages`)
 }
 
-export function createMessage(chatId: number, content: string): Promise<void> {
+export function createMessage(chatId: number, content: string): Promise<Message> {
   return request(`/chats/${chatId}/messages`, {
     method: 'POST',
     body: JSON.stringify({ content }),
